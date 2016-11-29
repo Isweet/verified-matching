@@ -144,7 +144,6 @@ method z_algorithm_naive(str : array<char>) returns (zs : array<int>)
   }
 }
 
-/*
 method z_algorithm(str : array<char>) returns (zs : array<int>)
   requires nonnull(str)
   requires nonempty(str)
@@ -162,11 +161,15 @@ method z_algorithm(str : array<char>) returns (zs : array<int>)
   while (i< zs.Length)
     invariant 1 <= i <= zs.Length
     invariant z_zero_correct(zs)
-    invariant j < i
     invariant forall k :: 1 <= k < i ==> valid_slice(k, zs[k], zs)
+    invariant j < i
     invariant j+zs[j] == maxZ
     invariant maxZ <= zs.Length
     invariant forall k :: 1 <= k < i ==> slice_eq(0, str, k, str, zs[k])
+    invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
+      (zs[idx] >= k ==> slice_eq(0, str, idx, str, k))
+    invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
+      (slice_eq(0, str, idx, str, k) ==> zs[idx] >= k)
   {
     if (maxZ < i){
       var l := 0;
@@ -174,13 +177,19 @@ method z_algorithm(str : array<char>) returns (zs : array<int>)
       
       while (i+l<str.Length) && (str[i+l]==str[l])
         invariant 1 <= i+l <= str.Length
+        invariant z_zero_correct(zs)
         invariant forall k :: 1 <= k < i ==> valid_slice(k, zs[k], zs)
         invariant i+zs[i] <= zs.Length
         invariant zs[i] == l
-        invariant z_zero_correct(zs)
         invariant maxZ <= zs.Length
         invariant forall k :: 1 <= k < i ==> slice_eq(0, str, k, str, zs[k])
         invariant slice_eq(0, str, i, str, zs[i])
+        invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
+          (zs[idx] >= k ==> slice_eq(0, str, idx, str, k))
+        invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
+          (slice_eq(0, str, idx, str, k) ==> zs[idx] >= k)
+        invariant forall k :: 0 <= k <= l ==> slice_eq(0, str, i, str, k) ==> zs[i] >= k
+
       {
         zs[i] := zs[i]+1;
         l := l+1;  
@@ -209,6 +218,11 @@ method z_algorithm(str : array<char>) returns (zs : array<int>)
             invariant zs[i] == l
             invariant forall k :: 1 <= k < i ==> slice_eq(0, str, k, str, zs[k])
             invariant slice_eq(0, str, i, str, zs[i])
+            invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
+              (zs[idx] >= k ==> slice_eq(0, str, idx, str, k))
+            invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
+              (slice_eq(0, str, idx, str, k) ==> zs[idx] >= k)
+            invariant forall k :: 0 <= k <= l ==> slice_eq(0, str, i, str, k) ==> zs[i] >= k
         {
           zs[i] := zs[i]+1;
           l := l+1;
@@ -220,6 +234,8 @@ method z_algorithm(str : array<char>) returns (zs : array<int>)
     i := i+1;
   }
 }
+
+/*
 
 method print_arr <T> (arr : array<T>)
   requires nonnull(arr)
