@@ -86,7 +86,8 @@ predicate z_nonzero_correct (str : array<char>, zs : array<int>)
   requires nonnull(str)
   requires nonnull(zs)
 {
-  forall idx :: 1 <= idx < zs.Length ==> slice_eq(0, str, idx, str, zs[idx])
+  forall idx :: 1 <= idx < zs.Length ==> forall k :: 0 <= k <= str.Length - idx ==>
+    (zs[idx] >= k <==> slice_eq(0, str, idx, str, k))
 }
 
 predicate z_correct (str : array<char>, zs : array<int>)
@@ -120,7 +121,9 @@ method z_algorithm_naive(str : array<char>) returns (zs : array<int>)
   while (i < zs.Length)
     invariant 1 <= i <= zs.Length
     invariant z_zero_correct(zs)
-    invariant forall k :: 1 <= k < i ==> slice_eq(0, str, k, str, zs[k])
+    invariant forall idx :: 1 <= idx < i ==> valid_slice(idx, zs[idx], zs)
+    invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
+      (zs[idx] >= k <==> slice_eq(0, str, idx, str, k))
   {
     var j := 0;
 
@@ -141,6 +144,7 @@ method z_algorithm_naive(str : array<char>) returns (zs : array<int>)
   }
 }
 
+/*
 method z_algorithm(str : array<char>) returns (zs : array<int>)
   requires nonnull(str)
   requires nonempty(str)
@@ -342,3 +346,4 @@ method Main() {
   print b;
   print "\n";
 }
+*/
