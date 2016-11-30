@@ -153,89 +153,72 @@ method z_algorithm(str : array<char>) returns (zs : array<int>)
   ensures z_correct(str, zs)
 {
   zs := new int[str.Length];
+
   zs[0] := 0;
-  var maxZ := 0;
-  var j := 0;
+
   var i := 1;
+  var j := 0;
   
   while (i< zs.Length)
     invariant 1 <= i <= zs.Length
     invariant z_zero_correct(zs)
-    invariant forall k :: 1 <= k < i ==> valid_slice(k, zs[k], zs)
     invariant j < i
-    invariant j+zs[j] == maxZ
-    invariant maxZ <= zs.Length
-    invariant forall k :: 1 <= k < i ==> slice_eq(0, str, k, str, zs[k])
+    invariant forall idx :: 1 <= idx < i ==> valid_slice(idx, zs[idx], str)
+    invariant forall idx :: 1 <= idx < i ==> slice_eq(0, str, idx, str, zs[idx])
     invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
       (zs[idx] >= k ==> slice_eq(0, str, idx, str, k))
+    invariant forall idx :: 1 <= idx < i ==> (idx + zs[idx] < str.Length ==> str[zs[idx]] != str[idx + zs[idx]])
     invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
       (slice_eq(0, str, idx, str, k) ==> zs[idx] >= k)
   {
-    if (maxZ < i){
+    if (j + zs[j] < i) { // no Z box before i extends past i
       var l := 0;
-      zs[i] := 0;
-      
-      while (i+l<str.Length) && (str[i+l]==str[l])
-        invariant 1 <= i+l <= str.Length
-        invariant z_zero_correct(zs)
-        invariant forall k :: 1 <= k < i ==> valid_slice(k, zs[k], zs)
-        invariant i+zs[i] <= zs.Length
-        invariant zs[i] == l
-        invariant maxZ <= zs.Length
-        invariant forall k :: 1 <= k < i ==> slice_eq(0, str, k, str, zs[k])
-        invariant slice_eq(0, str, i, str, zs[i])
-        invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
-          (zs[idx] >= k ==> slice_eq(0, str, idx, str, k))
-        invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
-          (slice_eq(0, str, idx, str, k) ==> zs[idx] >= k)
-        invariant forall k :: 0 <= k <= l ==> slice_eq(0, str, i, str, k) ==> zs[i] >= k
 
+      while (l < str.Length - i)
+        invariant 0 <= l <= str.Length - i
+        invariant valid_slice(i, l, str)
+        invariant slice_eq(0, str, i, str, l)
       {
-        zs[i] := zs[i]+1;
-        l := l+1;  
-      }
-      maxZ := i+zs[i];
-      j:= i;
-    }
-    else{
-      assert (i <= j + zs[j]);
-      var k := i-j;
-      if (zs[k]+i < maxZ){ // case 1
-        zs[i] := zs[k];
-      }
-      else if (zs[k]+i>maxZ){ // case 2
-        zs[i] := maxZ-i;
-      }
-      else { // case 3: zs[k]+i == maxZ 
-        zs[i] := maxZ-i;
-        var l := zs[i];
-        while (i+l<str.Length) && (str[i+l]==str[l])
-            invariant 1 <= i <= zs.Length
-            invariant z_zero_correct(zs)
-            invariant forall k :: 1 <= k < i ==> valid_slice(k, zs[k], zs)
-            invariant maxZ <= zs.Length
-            invariant i+zs[i] <= zs.Length
-            invariant zs[i] == l
-            invariant forall k :: 1 <= k < i ==> slice_eq(0, str, k, str, zs[k])
-            invariant slice_eq(0, str, i, str, zs[i])
-            invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
-              (zs[idx] >= k ==> slice_eq(0, str, idx, str, k))
-            invariant forall idx :: 1 <= idx < i ==> forall k :: 0 <= k <= str.Length - idx ==>
-              (slice_eq(0, str, idx, str, k) ==> zs[idx] >= k)
-            invariant forall k :: 0 <= k <= l ==> slice_eq(0, str, i, str, k) ==> zs[i] >= k
-        {
-          zs[i] := zs[i]+1;
-          l := l+1;
+        if (str[l] != str[i + l]) {
+          break;
         }
-        maxZ := i+zs[i];
-        j:=i;
+
+        l := l + 1;
+      }
+
+      zs[i] := l;
+      j := i;
+    } else {
+      var k := i - j;
+      
+      if (k + zs[k] < zs[j]) {
+        zs[i] := zs[k];
+      } else if (k + zs[k] > zs[j]) {
+        zs[i] := j + zs[j] - i;
+      } else {
+        var tmp := j + zs[j];
+        var l := 0;
+
+        while (l < str.Length - tmp)
+          invariant 0 <= l <= str.Length - i
+          invariant valid_slice(i, tmp - i + l, str)
+          invariant slice_eq(0, str, i, str, tmp - i + l)
+        {
+          if (str[tmp - i + l] != str[tmp + l]) {
+            break;
+          }
+
+          l := l + 1;
+        }
+
+        zs[i] := tmp - i + l;
+        j := i;
       }
     }
-    i := i+1;
+
+    i := i + 1;
   }
 }
-
-/*
 
 method print_arr <T> (arr : array<T>)
   requires nonnull(arr)
@@ -285,25 +268,25 @@ method array_of_string (str : string) returns (ret : array<char>)
   }
 }
 
-method matches(pattern : array<char>, text : array<char>) returns (ret : int)
+method matches(pattern : array<char>, text : array<char>) returns (ret : seq<int>)
   requires nonnull(pattern)
   requires nonnull(text)
   requires !contains('$', pattern)
   requires !contains('$', text)
 
-  //ensures (ret != -1 && slice_eq(0, pattern, ret, text, pattern.Length)) || (ret == -1 && forall idx :: 0 <= idx < text.Length ==> !slice_eq(0, pattern, idx, text, pattern.Length))
+  ensures forall idx :: 0 <= idx < text.Length ==> (slice_eq(0, pattern, idx, text, pattern.Length) ==> idx in ret)
+  ensures forall idx :: 0 <= idx < text.Length ==> (slice_eq(0, pattern, idx, text, pattern.Length) <== idx in ret)
 {
-
-  ret := -1;
+  ret := [];
 
   var conc := new char[pattern.Length + text.Length + 1];
 
   var i := 0;
 
   while (i < conc.Length)
-  invariant 0 <= i <= conc.Length
-  invariant forall k :: 0 <= k < i ==> if k < pattern.Length then conc[k] == pattern[k] else if k == pattern.Length then conc[k] == '$' else conc[k] == text[k - (pattern.Length + 1)]
-  invariant forall k :: 0 <= k < i ==> if k < pattern.Length then slice_eq(0, pattern, 0, conc, k) else if k == pattern.Length then conc[k] == '$' else slice_eq(0, text, pattern.Length + 1, conc, k - (pattern.Length + 1))
+    invariant 0 <= i <= conc.Length
+    invariant forall k :: 0 <= k < i ==> if k < pattern.Length then conc[k] == pattern[k] else if k == pattern.Length then conc[k] == '$' else conc[k] == text[k - (pattern.Length + 1)]
+    invariant forall k :: 0 <= k < i ==> if k < pattern.Length then slice_eq(0, pattern, 0, conc, k) else if k == pattern.Length then conc[k] == '$' else slice_eq(0, text, pattern.Length + 1, conc, k - (pattern.Length + 1))
   {
     if (i < pattern.Length) {
       conc[i] := pattern[i];
@@ -318,36 +301,26 @@ method matches(pattern : array<char>, text : array<char>) returns (ret : int)
 
   print_arr(conc);
 
-  //assert(slice_eq(0, pattern, 0, conc, pattern.Length));
-  //assert(slice_eq(0, text, pattern.Length + 1, conc, text.Length));
-
   var zs := z_algorithm(conc);
-
-  // assert(forall idx :: 0 <= idx < zs.Length ==> zs[idx] <= pattern.Length);
-
-  // assert (forall idx :: 0 <= idx < conc.Length ==> if zs[idx] == pattern.Length then slice_eq(0, conc, idx, conc, pattern.Length) else true);
-  // assert (forall idx :: 0 <= idx < conc.Length ==> if slice_eq(0, conc, idx, conc, pattern.Length) then slice_eq(0, pattern, idx - (pattern.Length + 1), text, pattern.Length) else true);
-  //assert (forall idx :: pattern.Length + 1 <= idx < conc.Length ==> if zs[idx] == pattern.Length then slice_eq(0, pattern, idx - (pattern.Length + 1), text, pattern.Length) else true);
 
   print_arr(zs);
 
-  i := pattern.Length + 1;
+  i := 0;
 
-  while (i < conc.Length)
-    invariant pattern.Length + 1 <= i <= conc.Length
-    //invariant ret == -1 || slice_eq(0, pattern, ret, text, pattern.Length)
-    //invariant ret != -1 ==> slice_eq(0, pattern, ret, text, pattern.Length)
-    //invariant ret == -1 ==> (forall k :: pattern.Length + 1 <= k < i ==> zs[k] < pattern.Length)
-    //invariant ret == -1 ==> (forall k :: pattern.Length + 1 <= k < i ==> !slice_eq(0, pattern, k - (pattern.Length + 1), text, pattern.Length))
-    //invariant (ret != -1 && slice_eq(0, pattern, ret, text, pattern.Length)) || (ret == -1 && forall k :: pattern.Length + 1 <= k < i ==> !slice_eq(0, pattern, k - (pattern.Length + 1), text, pattern.Length))
-    // invariant b ==> exists idx :: 0 <= idx < i && slice_eq(0, pattern, idx - (pattern.Length + 1), text, pattern.Length)
+  while (i < text.Length)
+    invariant 0 <= i <= text.Length
+
+    invariant forall idx :: 0 <= idx < i ==> (slice_eq(0, pattern, idx, text, pattern.Length) <==> slice_eq(0, conc, idx + (pattern.Length + 1), conc, pattern.Length))
+    invariant forall idx :: 0 <= idx < i ==> (slice_eq(0, conc, idx + (pattern.Length + 1), conc, pattern.Length) <==> zs[idx + (pattern.Length + 1)] >= pattern.Length)
+    invariant forall idx :: 0 <= idx < i ==> (zs[idx + (pattern.Length + 1)] >= pattern.Length <==> idx in ret)
   {
-    if (zs[i] >= pattern.Length) {
-      ret := i - (pattern.Length + 1);
-      break;
+    if (zs[i + (pattern.Length + 1)] >= pattern.Length) {
+      ret := [i] + ret;
+      i := i + 1;
+    } else {
+      i := i + 1;
     }
 
-    i := i + 1;
   }
 }
 
@@ -362,4 +335,3 @@ method Main() {
   print b;
   print "\n";
 }
-*/
