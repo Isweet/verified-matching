@@ -315,7 +315,6 @@ method matches(pattern : array<char>, text : array<char>) returns (ret : seq<int
     invariant forall idx :: 0 <= idx < i ==> (slice_eq(0, pattern, idx, text, pattern.Length) <==> slice_eq(0, conc, idx + (pattern.Length + 1), conc, pattern.Length))
     invariant forall idx :: 0 <= idx < i ==> (zs[idx + (pattern.Length + 1)] >= pattern.Length <==> idx in ret)
   {
-		assert i !in ret_old;
     if (zs[i + (pattern.Length + 1)] >= pattern.Length) {
 			ret_old := ret;
       ret := ret_old + [i];
