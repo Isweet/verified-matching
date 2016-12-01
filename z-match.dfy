@@ -275,7 +275,6 @@ method matches(pattern : array<char>, text : array<char>) returns (ret : seq<int
   requires !contains('$', text)
 
   ensures forall idx :: 0 <= idx < text.Length ==> (slice_eq(0, pattern, idx, text, pattern.Length) <==> idx in ret)
-  //ensures forall idx :: 0 <= idx < text.Length ==> (slice_eq(0, pattern, idx, text, pattern.Length) <== idx in ret)
 {
   ret := [];
 
@@ -286,7 +285,6 @@ method matches(pattern : array<char>, text : array<char>) returns (ret : seq<int
   while (i < conc.Length)
     invariant 0 <= i <= conc.Length
     invariant forall k :: 0 <= k < i ==> if k < pattern.Length then conc[k] == pattern[k] else if k == pattern.Length then conc[k] == '$' else conc[k] == text[k - (pattern.Length + 1)]
-    invariant forall k :: 0 <= k < i ==> if k < pattern.Length then slice_eq(0, pattern, 0, conc, k) else if k == pattern.Length then conc[k] == '$' else slice_eq(0, text, pattern.Length + 1, conc, k - (pattern.Length + 1))
   {
     if (i < pattern.Length) {
       conc[i] := pattern[i];
