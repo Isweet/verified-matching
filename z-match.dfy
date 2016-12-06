@@ -304,25 +304,17 @@ method matches(pattern : array<char>, text : array<char>) returns (ret : seq<int
   print_arr(zs);
 
   i := 0;
-	var ret_old := [];
 	
   while (i < text.Length)
     invariant 0 <= i <= text.Length
-		invariant forall i' :: i'>i ==> (i' !in ret)
-		invariant i !in ret_old
-		invariant (ret == ret_old) || (ret == ret_old + [i-1] )
-		
+		invariant forall i' :: i'>=i ==> (i' !in ret)
     invariant forall idx :: 0 <= idx < i ==> (slice_eq(0, pattern, idx, text, pattern.Length) <==> slice_eq(0, conc, idx + (pattern.Length + 1), conc, pattern.Length))
     invariant forall idx :: 0 <= idx < i ==> (zs[idx + (pattern.Length + 1)] >= pattern.Length <==> idx in ret)
   {
     if (zs[i + (pattern.Length + 1)] >= pattern.Length) {
-			ret_old := ret;
-      ret := ret_old + [i];
-			i := i + 1;
-    } else {
-			ret_old := ret;
-      i := i + 1;
-    }
+      ret := ret + [i];
+    } 
+		i := i+1;
   }
 }
 
