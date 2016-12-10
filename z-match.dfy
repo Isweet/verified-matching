@@ -1,15 +1,3 @@
-/* Integer Predicates */
-
-predicate positive (i : int)
-{
-  1 <= i
-}
-
-predicate nonnegative (i : int)
-{
-  0 <= i
-}
-
 /* Array Predicates */
 
 predicate nonnull <T> (arr : array<T>)
@@ -42,8 +30,6 @@ predicate valid_idx <T> (idx : int, arr : array<T>)
 {
   0 <= idx < arr.Length
 }
-
-/* NOTE: Maybe slices could be a record? Not worth it right now. */
 
 predicate valid_slice <T> (start : int, size : int, arr : array<T>)
   requires nonnull(arr)
@@ -111,7 +97,7 @@ method z_algorithm_naive(str : array<char>) returns (zs : array<int>)
   ensures nonnull(zs)
   ensures same_size(str, zs)
   ensures z_correct(str, zs)
-{ // TODO: Refactor invariants as predicates
+{
   zs := new int[str.Length];
 
   zs[0] := 0;
